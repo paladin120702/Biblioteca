@@ -6,13 +6,19 @@ namespace App\Models;
 
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * @property-read int|null $active_loans_count
+ */
 #[Fillable(['title', 'isbn', 'author_id', 'published_year', 'copies_total'])]
 class Book extends Model
 {
@@ -52,5 +58,60 @@ class Book extends Model
     public function loans(): HasMany
     {
         return $this->hasMany(Loan::class);
+    }
+
+    public function availableCopies(): int
+    {
+        $activeLoans = $this->active_loans_count
+            ?? $this->loans()->whereNull('returned_at')->count();
+
+        return max(0, $this->copies_total - $activeLoans);
+    }
+
+    /**
+     * @param  Builder<Book>  $query
+     */
+    #[Scope]
+    protected function withActiveLoansCount(Builder $query): void
+    {
+        $query->withCount([
+            'loans as active_loans_count' => fn (Builder $loans) => $loans->whereNull('returned_at'),
+        ]);
+    }
+
+    /**
+     * @param  Builder<Book>  $query
+     */
+    #[Scope]
+    protected function available(Builder $query): void
+    {
+        $query->has(
+            'loans',
+            '<',
+            DB::raw('books.copies_total'),
+            'and',
+            fn (Builder $loans) => $loans->whereNull('returned_at'),
+        );
+    }
+
+    /**
+     * @param  Builder<Book>  $query
+     */
+    #[Scope]
+    protected function search(Builder $query, string $term): void
+    {
+        $query->where(function (Builder $query) use ($term): void {
+            $query->where('title', 'like', "%{$term}%")
+                ->orWhereHas('author', fn (Builder $author) => $author->where('name', 'like', "%{$term}%"));
+        });
+    }
+
+    /**
+     * @param  Builder<Book>  $query
+     */
+    #[Scope]
+    protected function inCategory(Builder $query, int $categoryId): void
+    {
+        $query->whereHas('categories', fn (Builder $categories) => $categories->whereKey($categoryId));
     }
 }

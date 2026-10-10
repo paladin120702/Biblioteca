@@ -42,6 +42,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::Admin;
+    }
+
     /**
      * @return HasMany<Loan, $this>
      */
