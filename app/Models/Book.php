@@ -60,12 +60,30 @@ class Book extends Model
         return $this->hasMany(Loan::class);
     }
 
+    /**
+     * @return HasMany<Loan, $this>
+     */
+    public function activeLoans(): HasMany
+    {
+        return $this->loans()->active();
+    }
+
     public function availableCopies(): int
     {
         $activeLoans = $this->active_loans_count
-            ?? $this->loans()->whereNull('returned_at')->count();
+            ?? $this->activeLoans()->count();
 
         return max(0, $this->copies_total - $activeLoans);
+    }
+
+    public function isAvailable(): bool
+    {
+        return $this->availableCopies() > 0;
+    }
+
+    public function hasActiveLoans(): bool
+    {
+        return $this->activeLoans()->exists();
     }
 
     /**
@@ -74,9 +92,7 @@ class Book extends Model
     #[Scope]
     protected function withActiveLoansCount(Builder $query): void
     {
-        $query->withCount([
-            'loans as active_loans_count' => fn (Builder $loans) => $loans->whereNull('returned_at'),
-        ]);
+        $query->withCount('activeLoans');
     }
 
     /**
@@ -85,13 +101,7 @@ class Book extends Model
     #[Scope]
     protected function available(Builder $query): void
     {
-        $query->has(
-            'loans',
-            '<',
-            DB::raw('books.copies_total'),
-            'and',
-            fn (Builder $loans) => $loans->whereNull('returned_at'),
-        );
+        $query->has('activeLoans', '<', DB::raw('books.copies_total'));
     }
 
     /**

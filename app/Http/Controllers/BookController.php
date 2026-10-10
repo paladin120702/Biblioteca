@@ -67,6 +67,8 @@ class BookController extends Controller
     {
         $this->authorize('delete', $book);
 
+        abort_if($book->hasActiveLoans(), 409, 'This book has active loans and cannot be deleted.');
+
         $book->delete();
 
         return response()->noContent();

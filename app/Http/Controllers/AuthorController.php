@@ -43,6 +43,8 @@ class AuthorController extends Controller
     {
         $this->authorize('delete', $author);
 
+        abort_if($author->hasBooks(), 409, 'This author has books and cannot be deleted.');
+
         $author->delete();
 
         return response()->noContent();
