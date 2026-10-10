@@ -20,9 +20,11 @@ it('lets any authenticated user list and view categories', function (): void {
 });
 
 it('lets an admin create, update and delete categories', function (): void {
-    $id = asAdmin()->postJson('/api/categories', ['name' => 'Romance'])
+    asAdmin()->postJson('/api/categories', ['name' => 'Romance'])
         ->assertCreated()
-        ->json('data.id');
+        ->assertJsonPath('data.name', 'Romance');
+
+    $id = Category::sole()->id;
 
     asAdmin()->putJson("/api/categories/{$id}", ['name' => 'Ficção'])
         ->assertOk()

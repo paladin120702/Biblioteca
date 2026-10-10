@@ -20,9 +20,11 @@ it('lets any authenticated user list and view authors', function (): void {
 });
 
 it('lets an admin create, update and delete authors', function (): void {
-    $id = asAdmin()->postJson('/api/authors', ['name' => 'Machado de Assis'])
+    asAdmin()->postJson('/api/authors', ['name' => 'Machado de Assis'])
         ->assertCreated()
-        ->json('data.id');
+        ->assertJsonPath('data.name', 'Machado de Assis');
+
+    $id = Author::sole()->id;
 
     asAdmin()->putJson("/api/authors/{$id}", ['name' => 'Clarice Lispector'])
         ->assertOk()

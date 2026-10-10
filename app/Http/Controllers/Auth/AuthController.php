@@ -26,7 +26,7 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->string('email'))->first();
+        $user = User::where('email', $request->string('email')->toString())->first();
 
         if (! $user || ! Hash::check($request->string('password')->toString(), $user->password)) {
             throw ValidationException::withMessages([

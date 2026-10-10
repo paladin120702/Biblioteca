@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
+/**
+ * @property-read User $user
+ * @property-read Book $book
+ */
 #[Fillable(['user_id', 'book_id', 'loaned_at', 'due_at', 'returned_at', 'fine_cents'])]
 class Loan extends Model
 {
@@ -70,9 +74,12 @@ class Loan extends Model
         return (int) $dueDate->diffInDays($reference->copy()->startOfDay());
     }
 
+    /**
+     * @return int<0, max>
+     */
     public function calculateFine(): int
     {
-        return $this->daysLate() * config()->integer('library.fine_per_day_cents');
+        return max(0, $this->daysLate() * config()->integer('library.fine_per_day_cents'));
     }
 
     public function markAsReturned(): void

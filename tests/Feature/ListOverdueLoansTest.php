@@ -7,7 +7,6 @@ use App\Models\Loan;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
-use function Pest\Laravel\artisan;
 use function Pest\Laravel\travelTo;
 
 beforeEach(function (): void {
@@ -28,7 +27,7 @@ it('lists overdue loans with days late and expected fine', function (): void {
     Loan::factory()->create(['due_at' => Carbon::parse('2026-03-20')]);
     Loan::factory()->create(['due_at' => Carbon::parse('2026-03-01'), 'returned_at' => Carbon::parse('2026-03-05')]);
 
-    artisan('loans:overdue')
+    command('loans:overdue')
         ->expectsTable(
             ['Member', 'Book', 'Due date', 'Days late', 'Expected fine'],
             [
@@ -43,7 +42,7 @@ it('filters by member', function (): void {
     $loan = overdueLoan('Ana', 'Dom Casmurro', '2026-03-07 10:00:00');
     overdueLoan('Bruno', 'Iracema', '2026-03-09 10:00:00');
 
-    artisan('loans:overdue', ['--user' => $loan->user_id])
+    command('loans:overdue', ['--user' => $loan->user_id])
         ->expectsTable(
             ['Member', 'Book', 'Due date', 'Days late', 'Expected fine'],
             [['Ana', 'Dom Casmurro', '2026-03-07', 3, "R\$\u{00A0}3,00"]],
@@ -54,13 +53,13 @@ it('filters by member', function (): void {
 it('says when there are no overdue loans', function (): void {
     Loan::factory()->create();
 
-    artisan('loans:overdue')
+    command('loans:overdue')
         ->expectsOutput('No overdue loans.')
         ->assertSuccessful();
 });
 
 it('fails for an unknown member', function (): void {
-    artisan('loans:overdue', ['--user' => 999])
+    command('loans:overdue', ['--user' => 999])
         ->expectsOutput('User [999] not found.')
         ->assertFailed();
 });

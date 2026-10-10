@@ -35,7 +35,7 @@ class BookController extends Controller
     {
         $book = DB::transaction(function () use ($request): Book {
             $book = Book::create($request->safe()->except('categories'));
-            $book->categories()->sync($request->validated('categories', []));
+            $book->categories()->sync($request->safe()->array('categories'));
 
             return $book;
         });
@@ -56,7 +56,7 @@ class BookController extends Controller
             $book->update($request->safe()->except('categories'));
 
             if ($request->has('categories')) {
-                $book->categories()->sync($request->validated('categories'));
+                $book->categories()->sync($request->safe()->array('categories'));
             }
         });
 
